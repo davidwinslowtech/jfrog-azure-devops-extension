@@ -4,6 +4,7 @@ const { join, sep, isAbsolute } = require('path');
 const execSync = require('child_process').execSync;
 const toolLib = require('azure-pipelines-tool-lib/tool');
 const credentialsHandler = require('typed-rest-client/Handlers');
+const fetch = require('node-fetch');
 const findJavaHome = require('azure-pipelines-tasks-java-common/java-common').findJavaHome;
 
 const fileName = getCliExecutableName();
@@ -157,9 +158,20 @@ function getCliExePathInArtifactory(cliVersion) {
 }
 
 function createAuthHandlers(serviceConnection) {
+    let serviceUrl = tl.getEndpointUrl(serviceConnection, false);
     let artifactoryUser = tl.getEndpointAuthorizationParameter(serviceConnection, 'username', true);
     let artifactoryPassword = tl.getEndpointAuthorizationParameter(serviceConnection, 'password', true);
     let artifactoryAccessToken = tl.getEndpointAuthorizationParameter(serviceConnection, 'apitoken', true);
+
+    let artifactoryProviderName = tl.getEndpointAuthorizationParameter(serviceConnection, 'providerName', true);
+    let artifactoryAuthServer = tl.getEndpointAuthorizationParameter(serviceConnection, 'authServer', true);
+
+    // Check if Artifactory should be accessed using Azure DevOps OIDC Token
+    if (artifactoryProviderName) {
+        // We remove await here!!
+        const accessToken = getAccessTokenWithOIDForEndpoint(serviceConnection, artifactoryProviderName, serviceUrl, artifactoryAuthServer);
+        return [new credentialsHandler.BearerCredentialHandler(accessToken, false)];
+    }
 
     // Check if Artifactory should be accessed using access-token.
     if (artifactoryAccessToken) {
@@ -173,6 +185,88 @@ function createAuthHandlers(serviceConnection) {
 
     // Use basic authentication.
     return [new credentialsHandler.BasicCredentialHandler(artifactoryUser, artifactoryPassword, false)];
+}
+
+async function getAccessTokenWithOIDForEndpoint(endpoint_name, provider_name, endpoint_server, auth_server) {
+    const adoToken = await getOidcTokenForEndpoint(endpoint_name);
+    const oidcTokenParts = adoToken.split('.');
+    if (oidcTokenParts.length !== 3) {
+        throw new Error('Invalid oidc token');
+    }
+    const oidcClaims = JSON.parse(Buffer.from(oidcTokenParts[1], 'base64').toString());
+
+    // Log the OIDC token claims so users know how to configure AWS
+    console.log('OIDC Token Subject: ', oidcClaims.sub);
+    console.log(`OIDC Token Claims: {"sub": "${oidcClaims.sub}"}`);
+    console.log('OIDC Token Issuer (Provider URL): ', oidcClaims.iss);
+    console.log('OIDC Token Audience: ', oidcClaims.aud);
+
+    const artifactoryTokenRequestBoth = {
+        grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+        subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
+        subject_token: adoToken,
+        provider_name: provider_name,
+    };
+
+    let token_server = auth_server ? auth_server : endpoint_server.replace("/artifactory", "");
+
+
+    let response = await fetch(`${token_server}/access/api/v1/oidc/token`, {
+        method: 'post',
+        body: JSON.stringify(artifactoryTokenRequestBoth),
+        headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await response.json();
+    console.log(`JFrog access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
+
+    return data.access_token;
+}
+
+async function getOidcTokenForEndpoint(endpoint_name) {
+    const jobId = getVariableRequired('System.JobId');
+    const planId = getVariableRequired('System.PlanId');
+    const projectId = getVariableRequired('System.TeamProjectId');
+    const hub = getVariableRequired('System.HostType');
+    const uri = getVariableRequired('System.CollectionUri');
+    const token = getVariableRequired('System.AccessToken');
+
+
+
+    // const auth = azNodeLib.getBasicHandler('', token);
+    // const connection = new azNodeLib.WebApi(uri, auth);
+    // const api = await connection.getTaskApi();
+    // const response = await api.createOidcToken({}, projectId, hub, planId, jobId, endpoint_name);
+
+    let url = `${uri}/${projectId}/_apis/distributedtask/hubs/${hub}/plans/${planId}/jobs/${jobId}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${endpoint_name}`;
+
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        const data = await response.json();
+        console.log(data);
+    } catch (error) {
+        console.error('Error occurred:', error);
+    }
+
+    if (!response.oidcToken) {
+        throw new Error('Invalid createOidcToken response, no oidcToken.');
+    }
+    return response.oidcToken;
+}
+
+function getVariableRequired(name) {
+    const variable = tl.getVariable(name);
+    if (!variable) {
+        throw new Error(`Required variable '${name}' returned undefined!`);
+    }
+
+    return variable;
 }
 
 function generateDownloadCliErrorMessage(downloadUrl, cliVersion) {
