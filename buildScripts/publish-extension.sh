@@ -26,7 +26,7 @@ tfx extension unpublish -t "$WINSLOWTECH_TOKEN" --extension-id $EXTENSION_ID --p
 tfx extension create --manifests vss-extension.json --publisher "$PUBLISHER" --rev-version --override $OVERRIDE_JSON
 
 vsixSize=$(du -k *.vsix | awk '{sum+=$1} END {print int(sum/1024)}')
-echo "Extension VSIX size is ${vsixSize}MB"
+echo " Extension VSIX size is ${vsixSize}MB"
 
 # Publish the extension
 tfx extension publish -t "$WINSLOWTECH_TOKEN" \
