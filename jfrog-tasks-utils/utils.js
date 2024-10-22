@@ -170,7 +170,7 @@ function createAuthHandlers(serviceConnection) {
     if (oidcProviderName) {
         const adoJWT = getADOJWT(serviceConnection);
         // Exchange the ID token from ADO for an access token from JFrog
-        jfrogAccessToken = getJFrogAccessToken(adoJWT, oidcProviderName, platformUrl);
+        const jfrogAccessToken = getJFrogAccessToken(adoJWT, oidcProviderName, platformUrl);
         return [new credentialsHandler.BearerCredentialHandler(jfrogAccessToken, false)];
     }
 
@@ -243,8 +243,10 @@ async function getJFrogAccessToken(adoJWT, oidcProviderName, platformURL) {
         subject_token: adoJWT,
         provider_name: oidcProviderName,
     };
+    const url = `${platformURL}/access/api/v1/oidc/token`;
+    console.log(`JFrog URL: ${url}`);
 
-    let res = await fetch(`${stripTrailingSlash(platformURL)}/access/api/v1/oidc/token`, {
+    let res = await fetch(url, {
         method: 'post',
         body: JSON.stringify(payload),
         headers: { 'Content-Type': 'application/json' },
@@ -353,10 +355,16 @@ function configureSpecificCliServer(service, urlFlag, serverId, cliPath, buildDi
     let stdinSecret;
     let secretInStdinSupported = isStdinSecretSupported();
     if (oidcProviderName) {
-        adoJWT = getADOJWT(service, oidcProviderName, platformURL);
-        const jfrogAccessToken = getJFrogAccessToken(adoJWT, oidcProviderName, platformURL);
-        cliCommand = cliJoin(cliCommand, secretInStdinSupported ? '--access-token-stdin' : '--access-token=' + quote(jfrogAccessToken));
-        stdinSecret = secretInStdinSupported ? jfrogAccessToken : undefined;
+        try {
+            adoJWT = getADOJWT(service, oidcProviderName, platformURL);
+            console.log(`GOT ADO JWT: ${adoJWT}`);
+            const jfrogAccessToken = getJFrogAccessToken(adoJWT, oidcProviderName, platformURL);
+            console.log(`GOT JFrog Access Token: ${jfrogAccessToken}`);
+            cliCommand = cliJoin(cliCommand, secretInStdinSupported ? '--access-token-stdin' : '--access-token=' + quote(jfrogAccessToken));
+            stdinSecret = secretInStdinSupported ? jfrogAccessToken : undefined;
+        } catch (ex) {
+            tl.setResult(tl.TaskResult.Failed, ex);
+        }
     } else if (serviceAccessToken) {
         // Add access-token if required.
         cliCommand = cliJoin(cliCommand, secretInStdinSupported ? '--access-token-stdin' : '--access-token=' + quote(serviceAccessToken));
