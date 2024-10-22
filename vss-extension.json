@@ -285,7 +285,7 @@
                                 }
                             },
                             {
-                                "id": "platfromUrl",
+                                "id": "platformUrl",
                                 "name": "Platform URL",
                                 "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
@@ -391,7 +391,7 @@
                                 }
                             },
                             {
-                                "id": "platfromUrl",
+                                "id": "platformUrl",
                                 "name": "Platform URL",
                                 "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
@@ -497,7 +497,7 @@
                                 }
                             },
                             {
-                                "id": "platfromUrl",
+                                "id": "platformUrl",
                                 "name": "Platform URL",
                                 "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
