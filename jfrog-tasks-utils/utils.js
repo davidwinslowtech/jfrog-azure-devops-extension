@@ -168,9 +168,9 @@ function createAuthHandlers(serviceConnection) {
 
     // Check if Artifactory should be accessed using Azure DevOps OIDC Token
     if (oidcProviderName) {
-        const adoJWT = getADOJWT(serviceConnection)
+        const adoJWT = getADOJWT(serviceConnection);
         // Exchange the ID token from ADO for an access token from JFrog
-        jfrogAccessToken = getJFrogAccessToken(adoJWT, oidcProviderName, platformUrl)
+        jfrogAccessToken = getJFrogAccessToken(adoJWT, oidcProviderName, platformUrl);
         return [new credentialsHandler.BearerCredentialHandler(jfrogAccessToken, false)];
     }
 
@@ -189,14 +189,14 @@ function createAuthHandlers(serviceConnection) {
 }
 
 async function getADOJWT(serviceConnectionID) {
-    let url = `
-    ${getValue('System.CollectionUri')}/
-    ${getValue('System.JobId')}/
-    _apis/distributedtask/hubs/
-    ${getValue('System.HostType')}/
-    plans/${getValue('System.PlanId')}/
-    jobs/${getValue('System.JobId')}/
-    oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionID}`;
+    let url = `\
+${getValue('System.CollectionUri')}\
+${getValue('System.TeamProject')}/\
+_apis/distributedtask/hubs/\
+${getValue('System.HostType')}/\
+plans/${getValue('System.PlanId')}/\
+jobs/${getValue('System.JobId')}/\
+oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionID}`;
 
     console.log(`ADO url: ${url}`);
 
