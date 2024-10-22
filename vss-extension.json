@@ -158,9 +158,9 @@
                         },
                         "inputDescriptors": [
                             {
-                                "id": "providerName",
-                                "name": "Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform. The OIDC provider & token claim details are provided in the build log output of any task using this connection.",
+                                "id": "oidcProviderName",
+                                "name": "OIDC Provider Name",
+                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -169,13 +169,13 @@
                                 }
                             },
                             {
-                                "id": "authServer",
-                                "name": "Auth Server",
-                                "description": "The access token will be obtained from this server but operations will use the server URL from above. May be required if using edge nodes.",
+                                "id": "platfromUrl",
+                                "name": "Platform URL",
+                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
-                                    "isRequired": false,
+                                    "isRequired": true,
                                     "dataType": "string"
                                 }
                             }
@@ -274,9 +274,9 @@
                         },
                         "inputDescriptors": [
                             {
-                                "id": "providerName",
-                                "name": "Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform. The OIDC provider & token claim details are provided in the build log output of any task using this connection.",
+                                "id": "oidcProviderName",
+                                "name": "OIDC Provider Name",
+                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -285,13 +285,13 @@
                                 }
                             },
                             {
-                                "id": "authServer",
-                                "name": "Auth Server",
-                                "description": "The access token will be obtained from this server but operations will use the server URL from above. May be required if using edge nodes.",
+                                "id": "platfromUrl",
+                                "name": "Platform URL",
+                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
-                                    "isRequired": false,
+                                    "isRequired": true,
                                     "dataType": "string"
                                 }
                             }
@@ -380,9 +380,9 @@
                         },
                         "inputDescriptors": [
                             {
-                                "id": "providerName",
-                                "name": "Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform. The OIDC provider & token claim details are provided in the build log output of any task using this connection.",
+                                "id": "oidcProviderName",
+                                "name": "OIDC Provider Name",
+                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -391,13 +391,13 @@
                                 }
                             },
                             {
-                                "id": "authServer",
-                                "name": "Auth Server",
-                                "description": "The access token will be obtained from this server but operations will use the server URL from above. May be required if using edge nodes.",
+                                "id": "platfromUrl",
+                                "name": "Platform URL",
+                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
-                                    "isRequired": false,
+                                    "isRequired": true,
                                     "dataType": "string"
                                 }
                             }
@@ -486,9 +486,9 @@
                         },
                         "inputDescriptors": [
                             {
-                                "id": "providerName",
-                                "name": "Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform. The OIDC provider & token claim details are provided in the build log output of any task using this connection.",
+                                "id": "oidcProviderName",
+                                "name": "OIDC Provider Name",
+                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -497,13 +497,13 @@
                                 }
                             },
                             {
-                                "id": "authServer",
-                                "name": "Auth Server",
-                                "description": "The access token will be obtained from this server but operations will use the server URL from above. May be required if using edge nodes.",
+                                "id": "platfromUrl",
+                                "name": "Platform URL",
+                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
-                                    "isRequired": false,
+                                    "isRequired": true,
                                     "dataType": "string"
                                 }
                             }
