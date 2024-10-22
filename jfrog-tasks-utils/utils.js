@@ -163,14 +163,15 @@ function createAuthHandlers(serviceConnection) {
     let artifactoryPassword = tl.getEndpointAuthorizationParameter(serviceConnection, 'password', true);
     let artifactoryAccessToken = tl.getEndpointAuthorizationParameter(serviceConnection, 'apitoken', true);
 
-    let artifactoryProviderName = tl.getEndpointAuthorizationParameter(serviceConnection, 'providerName', true);
-    let artifactoryAuthServer = tl.getEndpointAuthorizationParameter(serviceConnection, 'authServer', true);
+    let oidcProviderName = tl.getEndpointAuthorizationParameter(serviceConnection, 'oidcProviderName', true);
+    let platformUrl = tl.getEndpointAuthorizationParameter(serviceConnection, 'platformUrl', true);
 
     // Check if Artifactory should be accessed using Azure DevOps OIDC Token
-    if (artifactoryProviderName) {
-        // We remove await here!!
-        const accessToken = getAccessTokenWithOIDForEndpoint(serviceConnection, artifactoryProviderName, serviceUrl, artifactoryAuthServer);
-        return [new credentialsHandler.BearerCredentialHandler(accessToken, false)];
+    if (oidcProviderName) {
+        const adoJWT = getADOJWT(serviceConnection)
+        // Exchange the ID token from ADO for an access token from JFrog
+        jfrogAccessToken = getJFrogAccessToken(adoJWT, oidcProviderName, platformUrl)
+        return [new credentialsHandler.BearerCredentialHandler(jfrogAccessToken, false)];
     }
 
     // Check if Artifactory should be accessed using access-token.
@@ -187,69 +188,28 @@ function createAuthHandlers(serviceConnection) {
     return [new credentialsHandler.BasicCredentialHandler(artifactoryUser, artifactoryPassword, false)];
 }
 
-async function getAccessTokenWithOIDForEndpoint(endpoint_name, provider_name, endpoint_server, auth_server) {
-    const adoToken = await getOidcTokenForEndpoint(endpoint_name);
-    const oidcTokenParts = adoToken.split('.');
-    if (oidcTokenParts.length !== 3) {
-        throw new Error('Invalid oidc token');
-    }
-    const oidcClaims = JSON.parse(Buffer.from(oidcTokenParts[1], 'base64').toString());
+async function getADOJWT(serviceConnectionID) {
+    let url = `
+    ${getValue('System.CollectionUri')}/
+    ${getValue('System.JobId')}/
+    _apis/distributedtask/hubs/
+    ${getValue('System.HostType')}/
+    plans/${getValue('System.PlanId')}/
+    jobs/${getValue('System.JobId')}/
+    oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionID}`;
 
-    // Log the OIDC token claims so users know how to configure AWS
-    console.log('OIDC Token Subject: ', oidcClaims.sub);
-    console.log(`OIDC Token Claims: {"sub": "${oidcClaims.sub}"}`);
-    console.log('OIDC Token Issuer (Provider URL): ', oidcClaims.iss);
-    console.log('OIDC Token Audience: ', oidcClaims.aud);
-
-    const artifactoryTokenRequestBoth = {
-        grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-        subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
-        subject_token: adoToken,
-        provider_name: provider_name,
-    };
-
-    let token_server = auth_server ? auth_server : endpoint_server.replace("/artifactory", "");
-
-
-    let response = await fetch(`${token_server}/access/api/v1/oidc/token`, {
-        method: 'post',
-        body: JSON.stringify(artifactoryTokenRequestBoth),
-        headers: { 'Content-Type': 'application/json' },
-    });
-    const data = await response.json();
-    console.log(`JFrog access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
-
-    return data.access_token;
-}
-
-async function getOidcTokenForEndpoint(endpoint_name) {
-    const jobId = getVariableRequired('System.JobId');
-    const planId = getVariableRequired('System.PlanId');
-    const projectId = getVariableRequired('System.TeamProjectId');
-    const hub = getVariableRequired('System.HostType');
-    const uri = getVariableRequired('System.CollectionUri');
-    const token = getVariableRequired('System.AccessToken');
-
-
-
-    // const auth = azNodeLib.getBasicHandler('', token);
-    // const connection = new azNodeLib.WebApi(uri, auth);
-    // const api = await connection.getTaskApi();
-    // const response = await api.createOidcToken({}, projectId, hub, planId, jobId, endpoint_name);
-
-    let url = `${uri}/${projectId}/_apis/distributedtask/hubs/${hub}/plans/${planId}/jobs/${jobId}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${endpoint_name}`;
-
+    console.log(`ADO url: ${url}`);
 
     try {
-        const response = await fetch(url, {
+        const res = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
+                Authorization: `Bearer ${getValue('System.AccessToken')}`,
             },
         });
-        const data = await response.json();
-        console.log(data);
+        const data = await res.json();
+        console.log(`ADO response: ${data}`);
     } catch (error) {
         console.error('Error occurred:', error);
     }
@@ -257,13 +217,48 @@ async function getOidcTokenForEndpoint(endpoint_name) {
     if (!response.oidcToken) {
         throw new Error('Invalid createOidcToken response, no oidcToken.');
     }
+
+    const adoJWT = response.oidcToken.split('.');
+    if (adoJWT.length !== 3) {
+        throw new Error('Invalid oidc JWT format.');
+    }
+
+    logIDToken(adoJWT);
     return response.oidcToken;
 }
 
-function getVariableRequired(name) {
-    const variable = tl.getVariable(name);
+async function logIDToken(adoJWT) {
+    const oidcClaims = JSON.parse(Buffer.from(adoJWT[1], 'base64').toString());
+    // Log the OIDC token claims so users know how to configure AWS
+    console.log('OIDC Token Subject: ', oidcClaims.sub);
+    console.log(`OIDC Token Claims: {"sub": "${oidcClaims.sub}"}`);
+    console.log('OIDC Token Issuer (Provider URL): ', oidcClaims.iss);
+    console.log('OIDC Token Audience: ', oidcClaims.aud);
+}
+
+async function getJFrogAccessToken(adoJWT, oidcProviderName, platformURL) {
+    const payload = {
+        grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+        subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
+        subject_token: adoJWT,
+        provider_name: oidcProviderName,
+    };
+
+    let res = await fetch(`${stripTrailingSlash(platformURL)}/access/api/v1/oidc/token`, {
+        method: 'post',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+    console.log(`JFrog access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
+
+    return data.access_token;
+}
+
+function getValue(key) {
+    const variable = tl.getVariable(key);
     if (!variable) {
-        throw new Error(`Required variable '${name}' returned undefined!`);
+        throw new Error(`Required variable '${key}' returned undefined!`);
     }
 
     return variable;
@@ -352,10 +347,17 @@ function configureSpecificCliServer(service, urlFlag, serverId, cliPath, buildDi
     let serviceUser = tl.getEndpointAuthorizationParameter(service, 'username', true);
     let servicePassword = tl.getEndpointAuthorizationParameter(service, 'password', true);
     let serviceAccessToken = tl.getEndpointAuthorizationParameter(service, 'apitoken', true);
+    let oidcProviderName = tl.getEndpointAuthorizationParameter(service, 'oidcProviderName', true);
+    let platformURL = tl.getEndpointAuthorizationParameter(service, 'platformUrl', true);
     let cliCommand = cliJoin(cliPath, jfrogCliConfigAddCommand, quote(serverId), urlFlag + '=' + quote(serviceUrl), '--interactive=false');
     let stdinSecret;
     let secretInStdinSupported = isStdinSecretSupported();
-    if (serviceAccessToken) {
+    if (oidcProviderName) {
+        adoJWT = getADOJWT(service, oidcProviderName, platformURL);
+        const jfrogAccessToken = getJFrogAccessToken(adoJWT, oidcProviderName, platformURL);
+        cliCommand = cliJoin(cliCommand, secretInStdinSupported ? '--access-token-stdin' : '--access-token=' + quote(jfrogAccessToken));
+        stdinSecret = secretInStdinSupported ? jfrogAccessToken : undefined;
+    } else if (serviceAccessToken) {
         // Add access-token if required.
         cliCommand = cliJoin(cliCommand, secretInStdinSupported ? '--access-token-stdin' : '--access-token=' + quote(serviceAccessToken));
         stdinSecret = secretInStdinSupported ? serviceAccessToken : undefined;
@@ -369,6 +371,7 @@ function configureSpecificCliServer(service, urlFlag, serverId, cliPath, buildDi
         );
         stdinSecret = secretInStdinSupported ? servicePassword : undefined;
     }
+
     return executeCliCommand(cliCommand, buildDir, { stdinSecret });
 }
 
