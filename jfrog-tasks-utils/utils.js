@@ -157,8 +157,7 @@ function getCliExePathInArtifactory(cliVersion) {
     return cliVersion + '/' + cliPackage + '/' + fileName;
 }
 
-function createAuthHandlers(serviceConnection) {
-    let serviceUrl = tl.getEndpointUrl(serviceConnection, false);
+ function createAuthHandlers(serviceConnection) {
     let artifactoryUser = tl.getEndpointAuthorizationParameter(serviceConnection, 'username', true);
     let artifactoryPassword = tl.getEndpointAuthorizationParameter(serviceConnection, 'password', true);
     let artifactoryAccessToken = tl.getEndpointAuthorizationParameter(serviceConnection, 'apitoken', true);
@@ -166,14 +165,28 @@ function createAuthHandlers(serviceConnection) {
     let oidcProviderName = tl.getEndpointAuthorizationParameter(serviceConnection, 'oidcProviderName', true);
     let platformUrl = tl.getEndpointAuthorizationParameter(serviceConnection, 'platformUrl', true);
 
+    console.log('here is the service connection: ', serviceConnection);
     // Check if Artifactory should be accessed using Azure DevOps OIDC Token
+    let jfrogAccessToken;
     if (oidcProviderName) {
-        const adoJWT = getADOJWT(serviceConnection);
-        // Exchange the ID token from ADO for an access token from JFrog
-        const jfrogAccessToken = getJFrogAccessToken(adoJWT, oidcProviderName, platformUrl);
-        return [new credentialsHandler.BearerCredentialHandler(jfrogAccessToken, false)];
+        getADOJWT(serviceConnection)
+            .then((adoJWT) => {
+                getJFrogAccessToken(adoJWT, oidcProviderName, platformUrl)
+                    .then((token) => {
+                        jfrogAccessToken = token;
+                        console.log('JFrog access token set in config');
+                        return [new credentialsHandler.BearerCredentialHandler(jfrogAccessToken, false)];
+                    })
+                    .catch((error) => {
+                        console.error('Error occurred while getting JFrog access tokenaa: ', error);
+                        tl.setResult(tl.TaskResult.Failed, 'Error occurred while getting JFrog access token: ' + error);
+                    });
+            })
+            .catch((error) => {
+                console.error('Error occurred while getting ADO JWT: ', error);
+                tl.setResult(tl.TaskResult.Failed, 'Error occurred while getting ADO JWT: ' + error);
+            });
     }
-
     // Check if Artifactory should be accessed using access-token.
     if (artifactoryAccessToken) {
         return [new credentialsHandler.BearerCredentialHandler(artifactoryAccessToken, false)];
@@ -191,7 +204,7 @@ function createAuthHandlers(serviceConnection) {
 async function getADOJWT(serviceConnectionID) {
     let url = `\
 ${getValue('System.CollectionUri')}\
-${getValue('System.TeamProject')}/\
+${getValue('System.TeamProjectId')}/\
 _apis/distributedtask/hubs/\
 ${getValue('System.HostType')}/\
 plans/${getValue('System.PlanId')}/\
@@ -199,32 +212,43 @@ jobs/${getValue('System.JobId')}/\
 oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionID}`;
 
     console.log(`ADO url: ${url}`);
-
+    let response;
+    let data;
     try {
-        const res = await fetch(url, {
+        response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${getValue('System.AccessToken')}`,
             },
         });
-        const data = await res.json();
-        console.log(`ADO response: ${data}`);
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+
+        const textResponse = await response.text(); // Get raw response
+        try {
+            data = JSON.parse(textResponse);
+            console.log('json response:', data);
+        } catch (parseError) {
+            console.error('JSON parsing error:', parseError);
+            throw new Error(`Failed to parse JSON response: ${textResponse}`);
+        }
+        console.log('Raw response:', textResponse);
     } catch (error) {
-        console.error('Error occurred:', error);
+        console.error('Error occurred with adoJWT:', error);
     }
 
-    if (!response.oidcToken) {
+    if (!data.oidcToken) {
         throw new Error('Invalid createOidcToken response, no oidcToken.');
     }
 
-    const adoJWT = response.oidcToken.split('.');
+    const adoJWT = data.oidcToken.split('.');
     if (adoJWT.length !== 3) {
         throw new Error('Invalid oidc JWT format.');
     }
 
     logIDToken(adoJWT);
-    return response.oidcToken;
+    return data.oidcToken;
 }
 
 async function logIDToken(adoJWT) {
@@ -243,6 +267,10 @@ async function getJFrogAccessToken(adoJWT, oidcProviderName, platformURL) {
         subject_token: adoJWT,
         provider_name: oidcProviderName,
     };
+
+    console.log('ado jwt: ', adoJWT);
+    console.log('I am here');
+    console.log('Payload:', payload);
     const url = `${platformURL}/access/api/v1/oidc/token`;
     console.log(`JFrog URL: ${url}`);
 
@@ -251,7 +279,12 @@ async function getJFrogAccessToken(adoJWT, oidcProviderName, platformURL) {
         body: JSON.stringify(payload),
         headers: { 'Content-Type': 'application/json' },
     });
+    if (!res.ok) {
+        throw new Error(`Failed to get JFrog access token: ${res.statusText}`);
+    }
     const data = await res.json();
+    console.log('JFrog response:', data);
+    console.log('JFrog response:', data);
     console.log(`JFrog access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
 
     return data.access_token;
@@ -355,20 +388,19 @@ function configureSpecificCliServer(service, urlFlag, serverId, cliPath, buildDi
     let stdinSecret;
     let secretInStdinSupported = isStdinSecretSupported();
     if (oidcProviderName) {
-        try {
-            adoJWT = getADOJWT(service, oidcProviderName, platformURL);
-            console.log(`GOT ADO JWT: ${adoJWT}`);
-            const jfrogAccessToken = getJFrogAccessToken(adoJWT, oidcProviderName, platformURL);
-            console.log(`GOT JFrog Access Token: ${jfrogAccessToken}`);
-            cliCommand = cliJoin(cliCommand, secretInStdinSupported ? '--access-token-stdin' : '--access-token=' + quote(jfrogAccessToken));
-            stdinSecret = secretInStdinSupported ? jfrogAccessToken : undefined;
-        } catch (ex) {
-            tl.setResult(tl.TaskResult.Failed, ex);
-        }
-    } else if (serviceAccessToken) {
-        // Add access-token if required.
-        cliCommand = cliJoin(cliCommand, secretInStdinSupported ? '--access-token-stdin' : '--access-token=' + quote(serviceAccessToken));
-        stdinSecret = secretInStdinSupported ? serviceAccessToken : undefined;
+        console.log('service url: ', serviceUrl);
+        // Check if Artifactory should be accessed using Azure DevOps OIDC Token
+        getADOJWT(service).then((adoJWT) => {
+            getJFrogAccessToken(adoJWT, oidcProviderName, platformURL)
+                .then((jfrogAccessToken) => {
+                    cliCommand = cliJoin(cliCommand, secretInStdinSupported ? '--access-token-stdin' : '--access-token=' + quote(jfrogAccessToken));
+                    stdinSecret = secretInStdinSupported ? jfrogAccessToken : undefined;
+                })
+                .catch((error) => {
+                    console.error('Error occurred while getting JFrog access token: ', error);
+                    tl.setResult(tl.TaskResult.Failed, 'Error occurred while getting JFrog access token: ' + error);
+                });
+        });
     } else {
         // Add username and password.
         cliCommand = cliJoin(
