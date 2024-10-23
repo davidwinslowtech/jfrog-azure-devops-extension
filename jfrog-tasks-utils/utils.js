@@ -188,46 +188,42 @@ function createAuthHandlers(serviceConnection) {
     return [new credentialsHandler.BasicCredentialHandler(artifactoryUser, artifactoryPassword, false)];
 }
 
-async function getADOJWT(serviceConnectionID) {
-    let url = `\
+function getADOJWTProviderUrl(serviceConnectionId) {
+    const url = `\
 ${getValue('System.CollectionUri')}\
 ${getValue('System.TeamProject')}/\
 _apis/distributedtask/hubs/\
 ${getValue('System.HostType')}/\
 plans/${getValue('System.PlanId')}/\
 jobs/${getValue('System.JobId')}/\
-oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionID}`;
-
+oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionId}`;
     console.log(`ADO url: ${url}`);
 
-    try {
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${getValue('System.AccessToken')}`,
-            },
-        });
-        const data = await res.json();
-        console.log(`ADO response: ${data}`);
-    } catch (error) {
-        console.error('Error occurred:', error);
-    }
-
-    if (!response.oidcToken) {
-        throw new Error('Invalid createOidcToken response, no oidcToken.');
-    }
-
-    const adoJWT = response.oidcToken.split('.');
-    if (adoJWT.length !== 3) {
-        throw new Error('Invalid oidc JWT format.');
-    }
-
-    logIDToken(adoJWT);
-    return response.oidcToken;
+    return url;
 }
 
-async function logIDToken(adoJWT) {
+function getADOJWT(serviceConnectionId) {
+    fetch(getADOJWTProviderUrl(serviceConnectionId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${getValue('System.AccessToken')}`,
+        },
+    })
+        .then((res) => {
+            if (res.ok) {
+                logIDToken(res.oidcToken);
+                return res.oidcToken;
+            } else {
+                tl.setResult(tl.TaskResult.Failed, `Failed to get ADO JWT: ${res.statusText}`);
+            }
+        })
+        .catch((error) => {
+            tl.setResult(tl.TaskResult.Failed, `Failed to get ADO JWT: ${error}`);
+        });
+}
+
+function logIDToken(adoJWT) {
     const oidcClaims = JSON.parse(Buffer.from(adoJWT[1], 'base64').toString());
     // Log the OIDC token claims so users know how to configure AWS
     console.log('OIDC Token Subject: ', oidcClaims.sub);
@@ -236,7 +232,7 @@ async function logIDToken(adoJWT) {
     console.log('OIDC Token Audience: ', oidcClaims.aud);
 }
 
-async function getJFrogAccessToken(adoJWT, oidcProviderName, platformURL) {
+function getJFrogAccessToken(adoJWT, oidcProviderName, platformURL) {
     const payload = {
         grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
         subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
@@ -246,14 +242,18 @@ async function getJFrogAccessToken(adoJWT, oidcProviderName, platformURL) {
     const url = `${platformURL}/access/api/v1/oidc/token`;
     console.log(`JFrog URL: ${url}`);
 
-    let res = await fetch(url, {
+    let res = fetch(url, {
         method: 'post',
         body: JSON.stringify(payload),
         headers: { 'Content-Type': 'application/json' },
-    });
-    const data = await res.json();
-    console.log(`JFrog access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
-
+    })
+        .then((res) => {
+            const data = res.json();
+            console.log(`JFrog access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
+        })
+        .catch((error) => {
+            tl.setResult(tl.TaskResult.Failed, `Failed to get JFrog Access Token: ${error}`);
+        });
     return data.access_token;
 }
 
