@@ -160,7 +160,7 @@
                             {
                                 "id": "oidcProviderName",
                                 "name": "OIDC Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "description": "The OIDC \"Provider Name\" configured in the artifactory Platform.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -169,8 +169,8 @@
                                 }
                             },
                             {
-                                "id": "platformUrl",
-                                "name": "Platform URL",
+                                "id": "jfrogPlatformUrl",
+                                "name": "JFrog Platform URL",
                                 "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
@@ -276,7 +276,7 @@
                             {
                                 "id": "oidcProviderName",
                                 "name": "OIDC Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "description": "The OIDC \"Provider Name\" configured in the artifactory Platform.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -285,8 +285,8 @@
                                 }
                             },
                             {
-                                "id": "platformUrl",
-                                "name": "Platform URL",
+                                "id": "jfrogPlatformUrl",
+                                "name": "JFrog Platform URL",
                                 "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
@@ -382,7 +382,7 @@
                             {
                                 "id": "oidcProviderName",
                                 "name": "OIDC Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "description": "The OIDC \"Provider Name\" configured in the artifactory Platform.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -391,8 +391,8 @@
                                 }
                             },
                             {
-                                "id": "platformUrl",
-                                "name": "Platform URL",
+                                "id": "jfrogPlatformUrl",
+                                "name": "JFrog Platform URL",
                                 "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
@@ -488,7 +488,7 @@
                             {
                                 "id": "oidcProviderName",
                                 "name": "OIDC Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "description": "The OIDC \"Provider Name\" configured in the artifactory Platform.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -497,8 +497,8 @@
                                 }
                             },
                             {
-                                "id": "platformUrl",
-                                "name": "Platform URL",
+                                "id": "jfrogPlatformUrl",
+                                "name": "JFrog Platform URL",
                                 "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
