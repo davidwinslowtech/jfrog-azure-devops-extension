@@ -111,8 +111,8 @@ function executeCliTask(runTaskFunc, cliVersion, cliDownloadUrl, cliAuthHandlers
 
     runTaskCbk = runTaskFunc;
     getCliPath(cliDownloadUrl, cliAuthHandlers, cliVersion)
-        .then((cliPath) => {
-            runCbk(cliPath);
+        .then(async (cliPath) => {
+            await runCbk(cliPath);
             collectEnvVarsIfNeeded(cliPath);
         })
         .catch((error) => tl.setResult(tl.TaskResult.Failed, 'Error occurred while executing task: ' + error));
@@ -208,7 +208,7 @@ async function getADOJWT(serviceConnectionID) {
             },
         });
 
-        const textResponse = await response.text();
+        const textResponse = response.text();
         try {
             data = JSON.parse(textResponse);
         } catch (parseError) {
@@ -257,10 +257,12 @@ async function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, 
         body: JSON.stringify(payload),
         headers: { 'Content-Type': 'application/json' },
     });
+
     if (!res.ok) {
         throw new Error(`Failed to get the artifactory access token: ${res.statusText}`);
     }
-    const data = await res.json();
+    
+    const data = res.json();
     console.log(`The artifactory access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
 
     return data.access_token;
@@ -389,12 +391,12 @@ async function configureSpecificCliServer(service, urlFlag, serverId, cliPath, b
  * @param workDir - Working directory.
  * @returns {boolean} - Whether the server was configured or not.
  */
-function configureDefaultJfrogServer(serverId, cliPath, workDir) {
+async function configureDefaultJfrogServer(serverId, cliPath, workDir) {
     let jfrogPlatformService = tl.getInput('jfrogPlatformConnection', false);
     if (!jfrogPlatformService) {
         return false;
     }
-    configureJfrogCliServer(jfrogPlatformService, serverId, cliPath, workDir);
+    await configureJfrogCliServer(jfrogPlatformService, serverId, cliPath, workDir);
     useCliServer(serverId, cliPath, workDir);
     return true;
 }
@@ -589,10 +591,10 @@ function getCliVersion(cliPath) {
     return String.fromCharCode.apply(null, res).split(' ')[2].trim();
 }
 
-function runCbk(cliPath) {
+async function runCbk(cliPath) {
     console.log('Running jfrog-cli from ' + cliPath);
     logCliVersionAndSetSelected(cliPath);
-    runTaskCbk(cliPath);
+    await runTaskCbk(cliPath);
 }
 
 function createCliDirs() {

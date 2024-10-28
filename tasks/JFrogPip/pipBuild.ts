@@ -5,31 +5,34 @@ const cliPipInstallCommand: string = 'pip install';
 const pipConfigCommand: string = 'pip-config';
 const disablePipCacheFlags: string = '--no-cache-dir --force-reinstall';
 
-function RunTaskCbk(cliPath: string): void {
+async function RunTaskCbk(cliPath: string): Promise<void> {
     const pipCommand: string = tl.getInput('command', true) ?? '';
     switch (pipCommand) {
         case 'install':
-            performPipInstall(cliPath);
+            await performPipInstall(cliPath);
             break;
     }
 }
 
-function performPipInstall(cliPath: string): void {
+async function performPipInstall(cliPath: string): Promise<void> {
     const inputWorkingDirectory: string = tl.getInput('workingDirectory', false) ?? '';
     const defaultWorkDir: string = tl.getVariable('System.DefaultWorkingDirectory') || process.cwd();
     const sourcePath: string = utils.determineCliWorkDir(defaultWorkDir, inputWorkingDirectory);
     const pipArguments: string = buildPipCliArgs();
     let pipCommand: string = utils.cliJoin(cliPath, cliPipInstallCommand, pipArguments);
     const virtualEnvActivation: string | undefined = tl.getInput('virtualEnvActivation', false);
+    
     if (virtualEnvActivation) {
         pipCommand = utils.cliJoin(virtualEnvActivation, '&&', pipCommand);
     }
-    executeCliCommand(pipCommand, sourcePath, cliPath);
+
+    await executeCliCommand(pipCommand, sourcePath, cliPath);
 }
 
 async function executeCliCommand(cliCmd: string, buildDir: string, cliPath: string): Promise<void> {
     const configuredServerIds: string[] = await performPipConfig(cliPath, buildDir);
     cliCmd = utils.appendBuildFlagsToCliCommand(cliCmd);
+
     try {
         utils.executeCliCommand(cliCmd, buildDir);
         tl.setResult(tl.TaskResult.Succeeded, 'Build Succeeded.');
@@ -44,7 +47,7 @@ async function executeCliCommand(cliCmd: string, buildDir: string, cliPath: stri
 
 // Creates Python pip configuration and returns the configured resolver server ID
 async function performPipConfig(cliPath: string, requiredWorkDir: string): Promise<string[]> {
-    return utils.createBuildToolConfigFile(cliPath, 'pip', requiredWorkDir, pipConfigCommand, 'targetResolveRepo', '');
+    return await utils.createBuildToolConfigFile(cliPath, 'pip', requiredWorkDir, pipConfigCommand, 'targetResolveRepo', '');
 }
 
 // Creates the Python CLI arguments
