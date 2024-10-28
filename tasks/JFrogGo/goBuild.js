@@ -71,8 +71,8 @@ function performGoCommand(goCommand, cliPath, requiredWorkDir) {
  * @param repoResolve - Resolution repo input name, null if not needed.
  * @param repoDeploy - Deployment repo input name, null if not needed.
  */
-function performGoConfig(cliPath, requiredWorkDir, repoResolve, repoDeploy) {
-    configuredServerIdsArray = utils.createBuildToolConfigFile(cliPath, 'go', requiredWorkDir, cliGoConfigCommand, repoResolve, repoDeploy);
+async function performGoConfig(cliPath, requiredWorkDir, repoResolve, repoDeploy) {
+    configuredServerIdsArray = await utils.createBuildToolConfigFile(cliPath, 'go', requiredWorkDir, cliGoConfigCommand, repoResolve, repoDeploy);
 }
 
 function performGoPublishCommand(cliPath, requiredWorkDir) {

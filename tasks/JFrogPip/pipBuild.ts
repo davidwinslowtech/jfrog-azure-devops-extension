@@ -27,8 +27,8 @@ function performPipInstall(cliPath: string): void {
     executeCliCommand(pipCommand, sourcePath, cliPath);
 }
 
-function executeCliCommand(cliCmd: string, buildDir: string, cliPath: string): void {
-    const configuredServerIds: string[] = performPipConfig(cliPath, buildDir);
+async function executeCliCommand(cliCmd: string, buildDir: string, cliPath: string): Promise<void> {
+    const configuredServerIds: string[] = await performPipConfig(cliPath, buildDir);
     cliCmd = utils.appendBuildFlagsToCliCommand(cliCmd);
     try {
         utils.executeCliCommand(cliCmd, buildDir);
@@ -43,7 +43,7 @@ function executeCliCommand(cliCmd: string, buildDir: string, cliPath: string): v
 }
 
 // Creates Python pip configuration and returns the configured resolver server ID
-function performPipConfig(cliPath: string, requiredWorkDir: string): string[] {
+async function performPipConfig(cliPath: string, requiredWorkDir: string): Promise<string[]> {
     return utils.createBuildToolConfigFile(cliPath, 'pip', requiredWorkDir, pipConfigCommand, 'targetResolveRepo', '');
 }
 

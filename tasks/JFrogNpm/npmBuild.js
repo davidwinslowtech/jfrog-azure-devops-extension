@@ -8,7 +8,7 @@ const npmCiCommand = 'npm ci';
 const npmConfigCommand = 'npmc';
 let configuredServerIdsArray;
 
-function RunTaskCbk(cliPath) {
+async function RunTaskCbk(cliPath) {
     let defaultWorkDir = tl.getVariable('System.DefaultWorkingDirectory');
     if (!defaultWorkDir) {
         tl.setResult(tl.TaskResult.Failed, 'Failed getting default working directory.');
@@ -27,12 +27,12 @@ function RunTaskCbk(cliPath) {
     let inputCommand = tl.getInput('command', true);
     switch (inputCommand) {
         case 'install': {
-            performNpmConfigCommand(cliPath, requiredWorkDir, 'sourceRepo', null);
+            await performNpmConfigCommand(cliPath, requiredWorkDir, 'sourceRepo', null);
             performNpmCommand(npmInstallCommand, true, cliPath, requiredWorkDir);
             break;
         }
         case 'ci': {
-            performNpmConfigCommand(cliPath, requiredWorkDir, 'sourceRepo', null);
+            await performNpmConfigCommand(cliPath, requiredWorkDir, 'sourceRepo', null);
             performNpmCommand(npmCiCommand, true, cliPath, requiredWorkDir);
             break;
         }
@@ -80,8 +80,16 @@ function performNpmCommand(cliNpmCommand, addThreads, cliPath, requiredWorkDir) 
     }
 }
 
-function performNpmConfigCommand(cliPath, requiredWorkDir, repoResolve, repoDeploy) {
-    configuredServerIdsArray = utils.createBuildToolConfigFile(cliPath, 'npm', requiredWorkDir, npmConfigCommand, repoResolve, repoDeploy);
+async function performNpmConfigCommand(cliPath, requiredWorkDir, repoResolve, repoDeploy) {
+    const configuredServerIdsArray = await utils.createBuildToolConfigFile(
+        cliPath, 
+        'npm', 
+        requiredWorkDir, 
+        npmConfigCommand, 
+        repoResolve, 
+        repoDeploy
+    );
+    return configuredServerIdsArray;
 }
 
 utils.executeCliTask(RunTaskCbk);
