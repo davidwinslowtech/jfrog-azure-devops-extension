@@ -188,37 +188,35 @@ async function createAuthHandlers(serviceConnection) {
     // Use basic authentication.
     return [new credentialsHandler.BasicCredentialHandler(artifactoryUser, artifactoryPassword, false)];
 }
-
-async function getADOJWT(serviceConnectionID) {
+function buildAdoJwtUrl(serviceConnectionID) {
     const uri = getValue('System.CollectionUri');
     const teamPrjID = getValue('System.TeamProjectId');
     const hub = getValue('System.HostType');
     const planID = getValue('System.PlanId');
     const jobID = getValue('System.JobId');
+    return `${uri}${teamPrjID}/_apis/distributedtask/hubs/${hub}/plans/${planID}/jobs/${jobID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionID}`;
+}
 
-    let url = `${uri}${teamPrjID}/_apis/distributedtask/hubs/${hub}/plans/${planID}/jobs/${jobID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionID}`;
-    let response;
-    let data;
+async function getADOJWT(serviceConnectionId) {
     try {
-        response = await fetch(url, {
+        const response = await fetch(buildAdoJwtUrl(serviceConnectionId), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${getValue('System.AccessToken')}`,
             },
         });
-
-        const textResponse = response.text();
-        try {
-            data = JSON.parse(textResponse);
-        } catch (parseError) {
-            console.error('JSON parsing error:', parseError);
-            throw new Error(`Failed to parse JSON response: ${textResponse}`);
-        }
+        const textResponse = await response.text();
+        const data = JSON.parse(textResponse);
+        ValidateAndlogIDToken(data);
+        return data.oidcToken;
     } catch (error) {
         console.error('Error occurred with adoJWT:', error);
+        throw new Error('Failed to get the ADO JWT token.');
     }
+}
 
+async function ValidateAndlogIDToken(data) {
     if (!data.oidcToken) {
         throw new Error('Invalid createOidcToken response, no oidcToken.');
     }
@@ -228,11 +226,6 @@ async function getADOJWT(serviceConnectionID) {
         throw new Error('Invalid oidc JWT format.');
     }
 
-    logIDToken(adoJWT);
-    return data.oidcToken;
-}
-
-async function logIDToken(adoJWT) {
     const oidcClaims = JSON.parse(Buffer.from(adoJWT[1], 'base64').toString());
     // Log the OIDC token claims so users know how to configure AWS
     console.log('OIDC Token Subject: ', oidcClaims.sub);
@@ -261,8 +254,8 @@ async function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, 
     if (!res.ok) {
         throw new Error(`Failed to get the artifactory access token: ${res.statusText}`);
     }
-    
-    const data = res.json();
+
+    const data = await res.json();
     console.log(`The artifactory access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
 
     return data.access_token;
