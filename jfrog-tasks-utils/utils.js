@@ -111,8 +111,8 @@ function executeCliTask(runTaskFunc, cliVersion, cliDownloadUrl, cliAuthHandlers
 
     runTaskCbk = runTaskFunc;
     getCliPath(cliDownloadUrl, cliAuthHandlers, cliVersion)
-        .then(async (cliPath) => {
-            await runCbk(cliPath);
+        .then((cliPath) => {
+            runCbk(cliPath);
             collectEnvVarsIfNeeded(cliPath);
         })
         .catch((error) => tl.setResult(tl.TaskResult.Failed, 'Error occurred while executing task: ' + error));
@@ -157,7 +157,7 @@ function getCliExePathInArtifactory(cliVersion) {
     return cliVersion + '/' + cliPackage + '/' + fileName;
 }
 
-async function createAuthHandlers(serviceConnection) {
+function createAuthHandlers(serviceConnection) {
     let artifactoryUser = tl.getEndpointAuthorizationParameter(serviceConnection, 'username', true);
     let artifactoryPassword = tl.getEndpointAuthorizationParameter(serviceConnection, 'password', true);
     let artifactoryAccessToken = tl.getEndpointAuthorizationParameter(serviceConnection, 'apitoken', true);
@@ -169,7 +169,7 @@ async function createAuthHandlers(serviceConnection) {
     if (oidcProviderName) {
         return [
             new credentialsHandler.BearerCredentialHandler(
-                await getArtifactoryAccessToken(serviceConnection, oidcProviderName, jfrogPlatformUrl),
+                getArtifactoryAccessToken(serviceConnection, oidcProviderName, jfrogPlatformUrl),
                 false,
             ),
         ];
@@ -197,16 +197,16 @@ function buildAdoJwtUrl(serviceConnectionID) {
     return `${uri}${teamPrjID}/_apis/distributedtask/hubs/${hub}/plans/${planID}/jobs/${jobID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionID}`;
 }
 
-async function getADOJWT(serviceConnectionId) {
+function getADOJWT(serviceConnectionId) {
     try {
-        const response = await fetch(buildAdoJwtUrl(serviceConnectionId), {
+        const response = fetch(buildAdoJwtUrl(serviceConnectionId), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${getValue('System.AccessToken')}`,
             },
         });
-        const textResponse = await response.text();
+        const textResponse = response.text();
         const data = JSON.parse(textResponse);
         ValidateAndlogIDToken(data);
         return data.oidcToken;
@@ -216,7 +216,7 @@ async function getADOJWT(serviceConnectionId) {
     }
 }
 
-async function ValidateAndlogIDToken(data) {
+function ValidateAndlogIDToken(data) {
     if (!data.oidcToken) {
         throw new Error('Invalid createOidcToken response, no oidcToken.');
     }
@@ -234,8 +234,8 @@ async function ValidateAndlogIDToken(data) {
     console.log('OIDC Token Audience: ', oidcClaims.aud);
 }
 
-async function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, jfrogPlatformUrl) {
-    const adoJWT = await getADOJWT(serviceConnectionId);
+function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, jfrogPlatformUrl) {
+    const adoJWT = getADOJWT(serviceConnectionId);
     const payload = {
         grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
         subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
@@ -245,7 +245,7 @@ async function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, 
 
     const url = `${jfrogPlatformUrl}/access/api/v1/oidc/token`;
 
-    let res = await fetch(url, {
+    let res = fetch(url, {
         method: 'post',
         body: JSON.stringify(payload),
         headers: { 'Content-Type': 'application/json' },
@@ -255,7 +255,7 @@ async function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, 
         throw new Error(`Failed to get the artifactory access token: ${res.statusText}`);
     }
 
-    const data = await res.json();
+    const data = res.json();
     console.log(`The artifactory access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
 
     return data.access_token;
@@ -332,23 +332,23 @@ function maskSecrets(str) {
         .replace(/--access-token='.*?'/g, '--access-token=***');
 }
 
-async function configureJfrogCliServer(jfrogService, serverId, cliPath, buildDir) {
-    return await configureSpecificCliServer(jfrogService, '--url', serverId, cliPath, buildDir);
+function configureJfrogCliServer(jfrogService, serverId, cliPath, buildDir) {
+    return configureSpecificCliServer(jfrogService, '--url', serverId, cliPath, buildDir);
 }
 
-async function configureArtifactoryCliServer(artifactoryService, serverId, cliPath, buildDir) {
-    return await configureSpecificCliServer(artifactoryService, '--artifactory-url', serverId, cliPath, buildDir);
+function configureArtifactoryCliServer(artifactoryService, serverId, cliPath, buildDir) {
+    return configureSpecificCliServer(artifactoryService, '--artifactory-url', serverId, cliPath, buildDir);
 }
 
-async function configureDistributionCliServer(distributionService, serverId, cliPath, buildDir) {
-    return await configureSpecificCliServer(distributionService, '--distribution-url', serverId, cliPath, buildDir);
+function configureDistributionCliServer(distributionService, serverId, cliPath, buildDir) {
+    return configureSpecificCliServer(distributionService, '--distribution-url', serverId, cliPath, buildDir);
 }
 
-async function configureXrayCliServer(xrayService, serverId, cliPath, buildDir) {
-    return await configureSpecificCliServer(xrayService, '--xray-url', serverId, cliPath, buildDir);
+function configureXrayCliServer(xrayService, serverId, cliPath, buildDir) {
+    return configureSpecificCliServer(xrayService, '--xray-url', serverId, cliPath, buildDir);
 }
 
-async function configureSpecificCliServer(service, urlFlag, serverId, cliPath, buildDir) {
+function configureSpecificCliServer(service, urlFlag, serverId, cliPath, buildDir) {
     let serviceUrl = tl.getEndpointUrl(service, false);
     let serviceUser = tl.getEndpointAuthorizationParameter(service, 'username', true);
     let servicePassword = tl.getEndpointAuthorizationParameter(service, 'password', true);
@@ -360,7 +360,7 @@ async function configureSpecificCliServer(service, urlFlag, serverId, cliPath, b
     let secretInStdinSupported = isStdinSecretSupported();
 
     if (oidcProviderName) {
-        const artifactoryAccessToken = await getArtifactoryAccessToken(service, oidcProviderName, jfrogPlatformUrl);
+        const artifactoryAccessToken = getArtifactoryAccessToken(service, oidcProviderName, jfrogPlatformUrl);
         cliCommand = cliJoin(cliCommand, secretInStdinSupported ? '--access-token-stdin' : '--access-token=' + quote(artifactoryAccessToken));
         stdinSecret = secretInStdinSupported ? artifactoryAccessToken : undefined;
     } else {
@@ -384,12 +384,12 @@ async function configureSpecificCliServer(service, urlFlag, serverId, cliPath, b
  * @param workDir - Working directory.
  * @returns {boolean} - Whether the server was configured or not.
  */
-async function configureDefaultJfrogServer(serverId, cliPath, workDir) {
+function configureDefaultJfrogServer(serverId, cliPath, workDir) {
     let jfrogPlatformService = tl.getInput('jfrogPlatformConnection', false);
     if (!jfrogPlatformService) {
         return false;
     }
-    await configureJfrogCliServer(jfrogPlatformService, serverId, cliPath, workDir);
+    configureJfrogCliServer(jfrogPlatformService, serverId, cliPath, workDir);
     useCliServer(serverId, cliPath, workDir);
     return true;
 }
@@ -400,10 +400,10 @@ async function configureDefaultJfrogServer(serverId, cliPath, workDir) {
  * @param cliPath - Path to JFrog CLI executable.
  * @param workDir - Working directory.
  */
-async function configureDefaultArtifactoryServer(usageType, cliPath, workDir) {
+function configureDefaultArtifactoryServer(usageType, cliPath, workDir) {
     let artifactoryService = tl.getInput('artifactoryConnection', true);
     const serverId = assembleUniqueServerId(usageType);
-    await configureArtifactoryCliServer(artifactoryService, serverId, cliPath, workDir);
+    configureArtifactoryCliServer(artifactoryService, serverId, cliPath, workDir);
     useCliServer(serverId, cliPath, workDir);
     return serverId;
 }
@@ -414,10 +414,10 @@ async function configureDefaultArtifactoryServer(usageType, cliPath, workDir) {
  * @param cliPath - Path to JFrog CLI executable.
  * @param workDir - Working directory.
  */
-async function configureDefaultDistributionServer(usageType, cliPath, workDir) {
+function configureDefaultDistributionServer(usageType, cliPath, workDir) {
     let distributionService = tl.getInput('distributionConnection', true);
     const serverId = assembleUniqueServerId(usageType);
-    await configureDistributionCliServer(distributionService, serverId, cliPath, workDir);
+    configureDistributionCliServer(distributionService, serverId, cliPath, workDir);
     useCliServer(serverId, cliPath, workDir);
     return serverId;
 }
@@ -428,10 +428,10 @@ async function configureDefaultDistributionServer(usageType, cliPath, workDir) {
  * @param cliPath - Path to JFrog CLI executable.
  * @param workDir - Working directory.
  */
-async function configureDefaultXrayServer(usageType, cliPath, workDir) {
+function configureDefaultXrayServer(usageType, cliPath, workDir) {
     let xrayService = tl.getInput('xrayConnection', true);
     const serverId = assembleUniqueServerId(usageType);
-    await configureXrayCliServer(xrayService, serverId, cliPath, workDir);
+    configureXrayCliServer(xrayService, serverId, cliPath, workDir);
     useCliServer(serverId, cliPath, workDir);
     return serverId;
 }
@@ -584,10 +584,10 @@ function getCliVersion(cliPath) {
     return String.fromCharCode.apply(null, res).split(' ')[2].trim();
 }
 
-async function runCbk(cliPath) {
+function runCbk(cliPath) {
     console.log('Running jfrog-cli from ' + cliPath);
     logCliVersionAndSetSelected(cliPath);
-    await runTaskCbk(cliPath);
+    runTaskCbk(cliPath);
 }
 
 function createCliDirs() {
@@ -818,40 +818,38 @@ function assembleUniqueServerId(usageType) {
  * @param repoDeploy - Repository to use for deploying. Pass a falsy value to skip.
  * @returns {string[]}
  */
-async function createBuildToolConfigFile(cliPath, cmd, requiredWorkDir, configCommand, repoResolver, repoDeploy) {
+function createBuildToolConfigFile(cliPath, cmd, requiredWorkDir, configCommand, repoResolver, repoDeploy) {
     let cliCommand = cliJoin(cliPath, configCommand);
     let serverIdResolve;
     let serverIdDeploy;
 
     if (repoResolver) {
+        // Configure Artifactory resolver server.
         const usageType = cmd + tl.getInput('command', true) + '_resolver';
-        serverIdResolve = await configureDefaultArtifactoryServer(usageType, cliPath, requiredWorkDir);
+        serverIdResolve = configureDefaultArtifactoryServer(usageType, cliPath, requiredWorkDir);
+
+        // Add serverId and repo to config command.
         cliCommand = cliJoin(cliCommand, '--server-id-resolve=' + quote(serverIdResolve));
         cliCommand = addStringParam(cliCommand, repoResolver, 'repo-resolve', true);
     }
 
     if (repoDeploy) {
+        // Configure Artifactory deployer server.
         const usageType = cmd + tl.getInput('command', true) + '_deployer';
-        serverIdDeploy = await configureDefaultArtifactoryServer(usageType, cliPath, requiredWorkDir);
+        serverIdDeploy = configureDefaultArtifactoryServer(usageType, cliPath, requiredWorkDir);
+
+        // Add serverId and repo to config command.
         cliCommand = cliJoin(cliCommand, '--server-id-deploy=' + quote(serverIdDeploy));
         cliCommand = addStringParam(cliCommand, repoDeploy, 'repo-deploy', true);
     }
 
-    try {
-        await new Promise((resolve, reject) => {
-            try {
-                executeCliCommand(cliCommand, requiredWorkDir);
-                resolve();
-            } catch (ex) {
-                tl.setResult(tl.TaskResult.Failed, ex);
-                reject(ex);
-            }
-        });
 
-        // Return array of defined server IDs
-        return [serverIdResolve, serverIdDeploy].filter((id) => id != null);
-    } catch (error) {
-        throw new Error(`Failed to execute CLI command: ${error}`);
+    // Execute cli.
+    try {
+        executeCliCommand(cliCommand, requiredWorkDir);
+        return [serverIdResolve, serverIdDeploy];
+    } catch (ex) {
+        tl.setResult(tl.TaskResult.Failed, ex);
     }
 }
 /**
