@@ -197,16 +197,16 @@ function buildAdoJwtUrl(serviceConnectionID) {
     return `${uri}${teamPrjID}/_apis/distributedtask/hubs/${hub}/plans/${planID}/jobs/${jobID}/oidctoken?api-version=7.1-preview.1&serviceConnectionId=${serviceConnectionID}`;
 }
 
-function getADOJWT(serviceConnectionId) {
+async function getADOJWT(serviceConnectionId) {
     try {
-        const response = fetch(buildAdoJwtUrl(serviceConnectionId), {
+        const response = await fetch(buildAdoJwtUrl(serviceConnectionId), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${getValue('System.AccessToken')}`,
             },
         });
-        const textResponse = response.text();
+        const textResponse = await response.text();
         const data = JSON.parse(textResponse);
         ValidateAndlogIDToken(data);
         return data.oidcToken;
@@ -235,30 +235,48 @@ function ValidateAndlogIDToken(data) {
 }
 
 function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, jfrogPlatformUrl) {
-    const adoJWT = getADOJWT(serviceConnectionId);
-    const payload = {
-        grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-        subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
-        subject_token: adoJWT,
-        provider_name: oidcProviderName,
-    };
+    let adoJWT;
+    let flag = false;
 
-    const url = `${jfrogPlatformUrl}/access/api/v1/oidc/token`;
+    getADOJWT(serviceConnectionId)
+        .then(token => {
+            adoJWT = token;
+            const payload = {
+                grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+                subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
+                subject_token: adoJWT,
+                provider_name: oidcProviderName,
+            };
 
-    let res = fetch(url, {
-        method: 'post',
-        body: JSON.stringify(payload),
-        headers: { 'Content-Type': 'application/json' },
-    });
+            const url = `${jfrogPlatformUrl}/access/api/v1/oidc/token`;
 
-    if (!res.ok) {
-        throw new Error(`Failed to get the artifactory access token: ${res.statusText}`);
-    }
+            const requestPromise = fetch(url, {
+                method: 'post',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'application/json' },
+            }).then(res => {
+                if (!res.ok) {
+                    throw new Error(`Failed to get the artifactory access token: ${res.statusText}`);
+                }
 
-    const data = res.json();
-    console.log(`The artifactory access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
+                return res.json();
+            }).then(data => {
+                console.log(`The artifactory access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
+                flag = true;
+                
+                return data.access_token;
+            }).catch(error => {
+                console.error("Error:", error);
+            });
 
-    return data.access_token;
+            const timeoutPromise = new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    reject(new Error('Timeout: Failed to get the artifactory access token within 1 minutes'));
+                }, 60 * 1000); // 1 minutes timeout
+            });
+
+            return Promise.race([requestPromise, timeoutPromise]);
+        });
 }
 
 function getValue(key) {
