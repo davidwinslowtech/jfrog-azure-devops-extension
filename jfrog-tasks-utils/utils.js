@@ -281,11 +281,13 @@ function ValidateAndlogIDToken(data) {
 
 function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, jfrogPlatformUrl) {
     let adoJWT;
+    let accessToken;
     let flag = false;
 
     getADOJWT(serviceConnectionId)
         .then(token => {
             adoJWT = token;
+            console.log("got the jwt token");
             const payload = {
                 grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
                 subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
@@ -294,12 +296,13 @@ function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, jfrogP
             };
 
             const url = `${jfrogPlatformUrl}/access/api/v1/oidc/token`;
-
+            console.log("trying to fetch the access token");
             fetch(url, {
                 method: 'post',
                 body: JSON.stringify(payload),
                 headers: { 'Content-Type': 'application/json' },
             }).then(res => {
+                console.log("res.json()")
                 if (!res.ok) {
                     throw new Error(`Failed to get the artifactory access token: ${res.statusText}`);
                 }
@@ -307,7 +310,7 @@ function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, jfrogP
             }).then(data => {
                 console.log(`The artifactory access token acquired, expires in ${(data.expires_in / 60).toFixed(2)} minutes.`);
                 flag = true;
-                return data.access_token;
+                accessToken = data.access_token;
             }).catch(error => {
                 console.error("Error:", error);
             });
@@ -318,7 +321,10 @@ function getArtifactoryAccessToken(serviceConnectionId, oidcProviderName, jfrogP
         if (flag) {
             clearInterval(interval); // Clear the interval
         }
+        console.log("access token is not ready yet!")
     }, 10);
+
+    return accessToken;
 }
 
 function getValue(key) {
