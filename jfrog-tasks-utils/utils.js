@@ -19,7 +19,7 @@ const buildAgent = 'jfrog-azure-devops-extension';
 const customFolderPath = encodePath(join(jfrogFolderPath, 'current'));
 const customCliPath = encodePath(join(customFolderPath, fileName)); // Optional - Customized jfrog-cli path.
 const jfrogCliReleasesUrl = 'https://releases.jfrog.io/artifactory/jfrog-cli/v2-jf';
-
+const request = require('sync-request');
 // Set by Tools Installer Task. This JFrog CLI version will be used in all tasks unless manual installation is used,
 // or a specific version was requested in a task. If not set, use the default CLI version.
 const pipelineRequestedCliVersionEnv = 'JFROG_CLI_PIPELINE_REQUESTED_VERSION_AZURE';
@@ -252,15 +252,90 @@ function configureDistributionCliServer(distributionService, serverId, cliPath, 
 function configureXrayCliServer(xrayService, serverId, cliPath, buildDir) {
     return configureSpecificCliServer(xrayService, '--xray-url', serverId, cliPath, buildDir);
 }
+function logIDToken(oidcToken) {
+    const oidcClaims = JSON.parse(Buffer.from(oidcToken.split('.')[1], 'base64').toString());
+    console.log('OIDC Token Subject: ', oidcClaims.sub);
+    console.log(`OIDC Token Claims: {"sub": "${oidcClaims.sub}"}`);
+    console.log('OIDC Token Issuer (Provider URL): ', oidcClaims.iss);
+    console.log('OIDC Token Audience: ', oidcClaims.aud);
+}
+
+function getADOIdToken(serviceConnectionID) {
+    const uri = tl.getVariable('System.CollectionUri');
+    const teamPrjID = tl.getVariable('System.TeamProjectId');
+    const hub = tl.getVariable('System.HostType');
+    const planID = tl.getVariable('System.PlanId');
+    const jobID = tl.getVariable('System.JobId');
+    const apiVersion = '7.1-preview.1';
+
+    const url = `${uri}${teamPrjID}/_apis/distributedtask/hubs/${hub}/plans/${planID}/jobs/${jobID}/oidctoken?api-version=${apiVersion}&serviceConnectionId=${serviceConnectionID}`;
+
+    try {
+        const response = request('POST', url, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${tl.getVariable('System.AccessToken')}`,
+            },
+        });
+
+        if (response.statusCode !== 200) {
+            throw new Error(`HTTP request failed with status code ${response.statusCode}`);
+        }
+
+        const parsedResponse = JSON.parse(response.getBody('utf8'));
+        const idToken = parsedResponse.oidcToken;
+        logIDToken(idToken);
+        return idToken;
+    } catch (error) {
+        throw new Error(`Failed to get or parse response: ${error.message}`);
+    }
+}
+
+function getArtifactoryAccessToken(adoJWT, oidcProviderName, jfrogPlatformUrl) {
+    const payload = {
+        grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+        subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
+        subject_token: adoJWT,
+        provider_name: oidcProviderName,
+    };
+
+    const url = `${jfrogPlatformUrl}/access/api/v1/oidc/token`;
+
+    try {
+        const response = request('POST', url, {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            json: payload,
+        });
+
+        if (response.statusCode !== 200) {
+            throw new Error(`HTTP request failed with status code ${response.statusCode}: ${response.getBody('utf8')}`);
+        }
+
+        const parsedResponse = JSON.parse(response.getBody('utf8'));
+        return parsedResponse.access_token;
+    } catch (error) {
+        throw new Error(`Failed to get or parse response: ${error.message}`);
+    }
+}
 
 function configureSpecificCliServer(service, urlFlag, serverId, cliPath, buildDir) {
     let serviceUrl = tl.getEndpointUrl(service, false);
     let serviceUser = tl.getEndpointAuthorizationParameter(service, 'username', true);
     let servicePassword = tl.getEndpointAuthorizationParameter(service, 'password', true);
     let serviceAccessToken = tl.getEndpointAuthorizationParameter(service, 'apitoken', true);
+    let oidcProviderName = tl.getEndpointAuthorizationParameter(service, 'oidcProviderName', true);
+    let jfrogPlatformUrl = tl.getEndpointAuthorizationParameter(service, 'jfrogPlatformUrl', true);
     let cliCommand = cliJoin(cliPath, jfrogCliConfigAddCommand, quote(serverId), urlFlag + '=' + quote(serviceUrl), '--interactive=false');
     let stdinSecret;
     let secretInStdinSupported = isStdinSecretSupported();
+
+    if (oidcProviderName) {
+        const idToken = getADOIdToken(service);
+        serviceAccessToken = getArtifactoryAccessToken(idToken, oidcProviderName, jfrogPlatformUrl);
+    }
+
     if (serviceAccessToken) {
         // Add access-token if required.
         cliCommand = cliJoin(cliCommand, secretInStdinSupported ? '--access-token-stdin' : '--access-token=' + quote(serviceAccessToken));
