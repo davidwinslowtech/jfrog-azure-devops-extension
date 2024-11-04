@@ -149,6 +149,37 @@
                                 }
                             }
                         ]
+                    },
+                    {
+                        "type": "ms.vss-endpoint.endpoint-auth-scheme-none",
+                        "displayName": "Azure DevOps OIDC (Services only)",
+                        "properties": {
+                            "isVerifiable": "False"
+                        },
+                        "inputDescriptors": [
+                            {
+                                "id": "oidcProviderName",
+                                "name": "OIDC Provider Name",
+                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "inputMode": "textbox",
+                                "isConfidential": false,
+                                "validation": {
+                                    "isRequired": true,
+                                    "dataType": "string"
+                                }
+                            },
+                            {
+                                "id": "jfrogPlatformUrl",
+                                "name": "Platform URL",
+                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
+                                "inputMode": "textbox",
+                                "isConfidential": false,
+                                "validation": {
+                                    "isRequired": true,
+                                    "dataType": "string"
+                                }
+                            }
+                        ]
                     }
                 ]
             }
@@ -234,6 +265,37 @@
                                 }
                             }
                         ]
+                    },
+                    {
+                        "type": "ms.vss-endpoint.endpoint-auth-scheme-none",
+                        "displayName": "Azure DevOps OIDC (Services only)",
+                        "properties": {
+                            "isVerifiable": "False"
+                        },
+                        "inputDescriptors": [
+                            {
+                                "id": "oidcProviderName",
+                                "name": "OIDC Provider Name",
+                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "inputMode": "textbox",
+                                "isConfidential": false,
+                                "validation": {
+                                    "isRequired": true,
+                                    "dataType": "string"
+                                }
+                            },
+                            {
+                                "id": "jfrogPlatformUrl",
+                                "name": "Platform URL",
+                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
+                                "inputMode": "textbox",
+                                "isConfidential": false,
+                                "validation": {
+                                    "isRequired": true,
+                                    "dataType": "string"
+                                }
+                            }
+                        ]
                     }
                 ]
             }
@@ -309,6 +371,37 @@
                                 }
                             }
                         ]
+                    },
+                    {
+                        "type": "ms.vss-endpoint.endpoint-auth-scheme-none",
+                        "displayName": "Azure DevOps OIDC (Services only)",
+                        "properties": {
+                            "isVerifiable": "False"
+                        },
+                        "inputDescriptors": [
+                            {
+                                "id": "oidcProviderName",
+                                "name": "OIDC Provider Name",
+                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "inputMode": "textbox",
+                                "isConfidential": false,
+                                "validation": {
+                                    "isRequired": true,
+                                    "dataType": "string"
+                                }
+                            },
+                            {
+                                "id": "jfrogPlatformUrl",
+                                "name": "Platform URL",
+                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
+                                "inputMode": "textbox",
+                                "isConfidential": false,
+                                "validation": {
+                                    "isRequired": true,
+                                    "dataType": "string"
+                                }
+                            }
+                        ]
                     }
                 ]
             }
@@ -378,6 +471,37 @@
                                 "description": "Access Token with Xray permissions. Click <a href=\"https://jfrog.com/help/r/jfrog-platform-administration-documentation/access-tokens\" target=\"_blank\">here</a> for information on how to generate Access Tokens.",
                                 "inputMode": "passwordbox",
                                 "isConfidential": true,
+                                "validation": {
+                                    "isRequired": true,
+                                    "dataType": "string"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "type": "ms.vss-endpoint.endpoint-auth-scheme-none",
+                        "displayName": "Azure DevOps OIDC (Services only)",
+                        "properties": {
+                            "isVerifiable": "False"
+                        },
+                        "inputDescriptors": [
+                            {
+                                "id": "oidcProviderName",
+                                "name": "OIDC Provider Name",
+                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "inputMode": "textbox",
+                                "isConfidential": false,
+                                "validation": {
+                                    "isRequired": true,
+                                    "dataType": "string"
+                                }
+                            },
+                            {
+                                "id": "jfrogPlatformUrl",
+                                "name": "Platform URL",
+                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
+                                "inputMode": "textbox",
+                                "isConfidential": false,
                                 "validation": {
                                     "isRequired": true,
                                     "dataType": "string"
