@@ -152,15 +152,15 @@
                     },
                     {
                         "type": "ms.vss-endpoint.endpoint-auth-scheme-none",
-                        "displayName": "Azure DevOps OIDC (Services only)",
+                        "displayName": "OpenID Connect Integration",
                         "properties": {
                             "isVerifiable": "False"
                         },
                         "inputDescriptors": [
                             {
                                 "id": "oidcProviderName",
-                                "name": "OIDC Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "name": "OpenID Connect Provider Name",
+                                "description": "The OpenID Connect \"Provider Name\" configured in JFrog Platform. Click <a href=\"https://github.com/jfrog/jfrog-azure-devops-extension/tree/v2?tab=readme-ov-file#using-openid-connect-oidc-authentication\" target=\"_blank\">here</a> for information about how to configure OpenID Connect.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -171,7 +171,7 @@
                             {
                                 "id": "jfrogPlatformUrl",
                                 "name": "Platform URL",
-                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
+                                "description": "The access token will be obtained from this URL (e.g. https://repo.jfrog.org/)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -268,15 +268,15 @@
                     },
                     {
                         "type": "ms.vss-endpoint.endpoint-auth-scheme-none",
-                        "displayName": "Azure DevOps OIDC (Services only)",
+                        "displayName": "OpenID Connect Integration",
                         "properties": {
                             "isVerifiable": "False"
                         },
                         "inputDescriptors": [
                             {
                                 "id": "oidcProviderName",
-                                "name": "OIDC Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "name": "OpenID Connect Provider Name",
+                                "description": "The OpenID Connect \"Provider Name\" configured in JFrog Platform. Click <a href=\"https://github.com/jfrog/jfrog-azure-devops-extension/tree/v2?tab=readme-ov-file#using-openid-connect-oidc-authentication\" target=\"_blank\">here</a> for information about how to configure OpenID Connect.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -287,7 +287,7 @@
                             {
                                 "id": "jfrogPlatformUrl",
                                 "name": "Platform URL",
-                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
+                                "description": "The access token will be obtained from this URL (e.g. https://repo.jfrog.org/)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -374,15 +374,15 @@
                     },
                     {
                         "type": "ms.vss-endpoint.endpoint-auth-scheme-none",
-                        "displayName": "Azure DevOps OIDC (Services only)",
+                        "displayName": "OpenID Connect Integration",
                         "properties": {
                             "isVerifiable": "False"
                         },
                         "inputDescriptors": [
                             {
                                 "id": "oidcProviderName",
-                                "name": "OIDC Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "name": "OpenID Connect Provider Name",
+                                "description": "The OpenID Connect \"Provider Name\" configured in JFrog Platform. Click <a href=\"https://github.com/jfrog/jfrog-azure-devops-extension/tree/v2?tab=readme-ov-file#using-openid-connect-oidc-authentication\" target=\"_blank\">here</a> for information about how to configure OpenID Connect.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -393,7 +393,7 @@
                             {
                                 "id": "jfrogPlatformUrl",
                                 "name": "Platform URL",
-                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
+                                "description": "The access token will be obtained from this URL (e.g. https://repo.jfrog.org/)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -480,15 +480,15 @@
                     },
                     {
                         "type": "ms.vss-endpoint.endpoint-auth-scheme-none",
-                        "displayName": "Azure DevOps OIDC (Services only)",
+                        "displayName": "OpenID Connect Integration",
                         "properties": {
                             "isVerifiable": "False"
                         },
                         "inputDescriptors": [
                             {
                                 "id": "oidcProviderName",
-                                "name": "OIDC Provider Name",
-                                "description": "The OIDC \"Provider Name\" configured in JFrog Platform.",
+                                "name": "OpenID Connect Provider Name",
+                                "description": "The OpenID Connect \"Provider Name\" configured in JFrog Platform. Click <a href=\"https://github.com/jfrog/jfrog-azure-devops-extension/tree/v2?tab=readme-ov-file#using-openid-connect-oidc-authentication\" target=\"_blank\">here</a> for information about how to configure OpenID Connect.",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {
@@ -499,7 +499,7 @@
                             {
                                 "id": "jfrogPlatformUrl",
                                 "name": "Platform URL",
-                                "description": "The access token will be obtained from this URL (e.g. https://my.jfrog.com)",
+                                "description": "The access token will be obtained from this URL (e.g. https://repo.jfrog.org/)",
                                 "inputMode": "textbox",
                                 "isConfidential": false,
                                 "validation": {

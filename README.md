@@ -29,37 +29,64 @@ The _[JFrog Extension](https://marketplace.visualstudio.com/items?itemName=JFrog
 
 ## Table of contents
 
-- [Table of contents](#table-of-contents)
-  - [Overview](#overview)
+- [JFrog Azure DevOps Extension](#jfrog-azure-devops-extension)
+- [Overview](#overview)
+  - [Table of contents](#table-of-contents)
   - [Download and Installation](#download-and-installation)
     - [Installing the Extension](#installing-the-extension)
     - [Installing the Build Agent](#installing-the-build-agent)
-    - [Configuring the Service Connections](#configuring-the-service-connections)
+      - [Automatic Installation](#automatic-installation)
+      - [Custom tools Installation](#custom-tools-installation)
+      - [Manual Installation](#manual-installation)
+        - [Installing JFrog CLI](#installing-jfrog-cli)
+        - [Installing the Maven Extractor](#installing-the-maven-extractor)
+        - [Installing the Gradle Extractor](#installing-the-gradle-extractor)
+        - [Installing Conan](#installing-conan)
+        - [Using TFS 2015](#using-tfs-2015)
+  - [Configuring the Service Connections](#configuring-the-service-connections)
+  - [Using OpenID Connect (OIDC) Authentication](#using-openid-connect-oidc-authentication)
+      - [Configure OpenID Connect Integration](#configure-openid-connect-integration)
+      - [Configure Identity Mappings](#configure-identity-mappings)
+      - [Configure the Service Connection](#configure-the-service-connection)
   - [Executing JFrog CLI Commands](#executing-jfrog-cli-commands)
-  - [Build tools Tasks](#build-tools-tasks)
-    - [JFrog Maven](#jfrog-maven-task)
-    - [JFrog Gradle](#jfrog-gradle-task)
-    - [JFrog Npm](#jfrog-npm-task)
-    - [JFrog Nuget](#jfrog-nuget-and-net-core-task)
-    - [JFrog .NET Core](#jfrog-nuget-and-net-core-task)
-    - [JFrog Pip](#jfrog-pip-task)
-    - [JFrog Conan](#jfrog-conan-task)
-    - [JFrog Go](#jfrog-go-task)
-  - [Build Tasks](#build-tasks)
-    - [JFrog Collect Build Issues](#jfrog-collect-build-issues)
-    - [JFrog Publish Build Info](#jfrog-publish-build-info)
-    - [JFrog Build Promotion](#jfrog-build-promotion)
-    - [Discarding Published Builds](#discarding-published-builds-from-artifactory)
+      - [JFrog CLI V2 Task](#jfrog-cli-v2-task)
   - [Managing Generic Artifacts](#managing-generic-artifacts)
-  - [JFrog Xray](#jfrog-xray-tasks)
-    - [Audit project's dependencies for Security Vulnerabilities](#audit-projects-dependencies-for-security-vulnerabilities)
-    - [Scanning Published Builds for Security Vulnerabilities with JFrog Xray](#scanning-published-builds-for-security-vulnerabilities)
-  - [JFrog Docker Tasks](#jfrog-docker-tasks)
-    - [Pushing and Pulling Docker Images to and from Artifactory](#pushing-and-pulling-docker-images-to-and-from-artifactory)
-    - [Scanning Local Docker Images with JFrog Xray](#scanning-local-docker-images-with-jfrog-xray)
-  - [JFrog Distribution](#managing-and-distributing-release-bundles)
-    - [JFrog Distribution Task](#jfrog-distribution-v2-task)
-  - [Contributions](#contribution)
+    - [Generic artifacts handling](#generic-artifacts-handling)
+    - [Downloading generic build dependencies from Artifactory](#downloading-generic-build-dependencies-from-artifactory)
+    - [Uploading generic build artifacts to Artifactory](#uploading-generic-build-artifacts-to-artifactory)
+    - [Setting / Deleting properties on files in Artifactory](#setting--deleting-properties-on-files-in-artifactory)
+    - [Moving / Copying / Deleting artifacts in Artifactory](#moving--copying--deleting-artifacts-in-artifactory)
+  - [Build tools Tasks](#build-tools-tasks)
+      - [JFrog Maven Task](#jfrog-maven-task)
+      - [JFrog Gradle Task](#jfrog-gradle-task)
+      - [JFrog Npm Task](#jfrog-npm-task)
+      - [JFrog Nuget and .NET Core Task](#jfrog-nuget-and-net-core-task)
+      - [JFrog Pip Task](#jfrog-pip-task)
+      - [JFrog Conan Task](#jfrog-conan-task)
+      - [JFrog Go Task](#jfrog-go-task)
+  - [Build Tasks](#build-tasks)
+      - [JFrog Collect Build Issues](#jfrog-collect-build-issues)
+        - [Configuration properties](#configuration-properties)
+      - [JFrog Publish Build Info](#jfrog-publish-build-info)
+      - [JFrog Build Promotion](#jfrog-build-promotion)
+        - [Using Build Promotion in a Release](#using-build-promotion-in-a-release)
+      - [Discarding Published Builds from Artifactory](#discarding-published-builds-from-artifactory)
+  - [JFrog Xray tasks](#jfrog-xray-tasks)
+      - [Audit project's dependencies for Security Vulnerabilities](#audit-projects-dependencies-for-security-vulnerabilities)
+      - [Scanning Published Builds for Security Vulnerabilities](#scanning-published-builds-for-security-vulnerabilities)
+  - [JFrog Docker tasks](#jfrog-docker-tasks)
+      - [Pushing and Pulling Docker Images to and from Artifactory](#pushing-and-pulling-docker-images-to-and-from-artifactory)
+      - [Scanning Local Docker Images with JFrog Xray](#scanning-local-docker-images-with-jfrog-xray)
+  - [Using Published Artifacts in a Release](#using-published-artifacts-in-a-release)
+      - [Using JFrog Generic Artifacts task](#using-jfrog-generic-artifacts-task)
+      - [Using Azure Artifact source](#using-azure-artifact-source)
+  - [Managing and Distributing Release Bundles](#managing-and-distributing-release-bundles)
+      - [JFrog Distribution V2 Task](#jfrog-distribution-v2-task)
+  - [Contribution](#contribution)
+    - [Building](#building)
+    - [Testing](#testing)
+      - [Skipping Tests](#skipping-tests)
+  - [Reporting issues](#reporting-issues)
 
 ## Download and Installation
 
@@ -233,97 +260,6 @@ in Azure DevOps.
 | <img width="200px" src="./images/service-artifactory.png">  | JFrog Tools Installer<br>JFrog Generic Artifacts<br>JFrog Nuget<br>JFrog .NET Core<br>JFrog npm<br>JFrog Pip<br>JFrog Maven<br>JFrog Gradle<br>JFrog Go<br>JFrog Conan<br>JFrog Collect Build Issues<br>JFrog Discard Builds<br>JFrog Build Promotion<br>JFrog Publish Build Info |
 |     <img width="200px" src="./images/service-xray.png">     | JFrog Audit<br>JFrog Build Scan                                                                                                                                                                                                                                                   |
 | <img width="200px" src="./images/service-distribution.png"> | JFrog Distribution                                                                                                                                                                                                                                                                |
-
-### Authenticating to JFrog from Azure Devops
-
-#### Authentication Methods
-
-When authenticating with JFrog from Azure DevOps, you have several options:
-
-- Basic Authentication: Use a username and password with the necessary permissions.
-- Token-Based Authentication: Provide an access token with deployment permissions.
-- OIDC Authentication: Leverage Azure DevOps' OIDC capabilities for secure, token-based authentication without storing credentials.
-
-#### OIDC Authentication
-
-- Administrative access to both JFrog and Azure DevOps.
-- Ability to configure service connections in Azure DevOps.
-- Familiarity with JWT (JSON Web Token) structure and claims.
-
-1. Set Up an OIDC Integration Provider in JFrog
-
-First, you need to configure an OIDC integration provider in JFrog:
-
-- Follow JFrog's official documentation on configuring an OIDC integration.
-- Ensure that the provider is set up to accept JWTs from Azure DevOps.
-- Note the provider name you assign, as it will be used later.
-
-2. Configure Azure DevOps Service Connection with OIDC
-
-In Azure DevOps:
-
-- Navigate to Project Settings > Service Connections.
-- Create a new JFrog service connection and select the option that supports OIDC authentication.
-- Configure the service connection to use the OIDC provider set up in JFrog.
-
-3. Obtain and Examine the Azure DevOps JWT
-
-Azure DevOps issues a JWT during build executions when using OIDC-authenticated service connections:
-
-- Execute a build pipeline that uses the OIDC service connection.
-- In the pipeline logs, locate and decode the JWT to inspect its claims.
-
-```
-{
-"jti": "<guid>",
-"sub": "sc://<DevopsOrgName>/<ProjectName>/<ServiceConnectionName>",
-"aud": "api://AzureADTokenExchange",
-"iss": "<https://vstoken.dev.azure.com/><GUID>",
-"nbf": 1708639268,
-"exp": 1708640467,
-"iat": 1708639868
-}
-
-```
-
-- jti: Unique token identifier.
-- sub: Subject identifier in the format sc://<DevOpsOrgName>/<ProjectName>/<ServiceConnectionName>.
-- aud: Audience for which the token is intended.
-- iss: Issuer of the token (Azure DevOps token service).
-- nbf: "Not before" timestamp.
-- exp: Expiration timestamp.
-- iat: Issued-at timestamp.
-
-Note: The exact values can be found in the system logs during a build execution.
-
-4. Configure Identity Mapping in JFrog
-
-- In JFrog, map the JWT claims to user identities:
-
-- Go to the OIDC integration settings.
-- Set up identity mapping rules based on the JWT claims from Azure DevOps.
-- For example, map the sub claim to a user or group in JFrog.
-- Ensure that the issuer (iss) and audience (aud) in the JWT match what JFrog expects.
-
-5. Use the Access Token in Azure DevOps Pipelines
-
-- With the configurations in place:
-
-- In your Azure DevOps pipeline YAML or classic editor, associate your JFrog tasks (e.g., Artifactory deploy, resolve tasks) with the OIDC service connection.
-- The pipeline will automatically obtain an access token from JFrog using the JWT provided by Azure DevOps.
-
-6. Verify the Integration
-
-- Run a pipeline that interacts with JFrog (e.g., publishing an artifact).
-- Ensure that the operations complete successfully without authentication errors.
-- Check JFrog's access logs to confirm that the authentication occurred via OIDC.
-
-#### Benefits of OIDC Authentication
-
-- Enhanced Security: Eliminates the need to store static credentials.
-- Dynamic Token Management: Tokens are short-lived and less vulnerable if compromised.
-- Simplified User Management: Leverages existing identities from Azure DevOps.
-
 <details>
   <summary>Not Using a Public CA (Certificate Authority)?</summary>
 
@@ -356,6 +292,132 @@ To enable TLS 1.2 on TFS:
 </details>
 
 <br>
+
+## Using OpenID Connect (OIDC) Authentication
+
+Using OpenID Connect (OIDC) to authenticate your pipelines eliminates the need for long lived static credentials providing a whole range of [security and practical benefits](https://jfrog.com/help/r/jfrog-platform-administration-documentation/openid-connect-integration-benefits).   
+You can read more about the [JFrog OpenID Connection Integration](https://jfrog.com/help/r/jfrog-platform-administration-documentation/openid-connect-integration) in the documentation.
+
+Setting up OpenID Connect has 3 separate parts:
+- Setting up an OpenID Connect Integration inside of the JFrog Platform.
+- Configuring Identity Mappings with Claim rules, matching to Projects & Service Connections.
+- Configuring Service Connections as OpenID Connect in the Projects in your Azure Devops Instance.
+
+Follow the guides below to configure each part.
+
+<details>
+    <summary>
+
+#### Configure OpenID Connect Integration
+
+</summary>
+
+
+First you must configure your JFrog instance to have an OpenID Connect integration to your Azure DevOps server.
+Login to your JFrog instance as an Administrator, then as [described in the documentation:](https://jfrog.com/help/r/jfrog-platform-administration-documentation/openid-connect-configurations-overview)
+
+1. Go to the Administrator panel.
+2. Select General Management.
+3. Choose Manage Integrations.
+4. Select New Integration - OpenID Connect
+
+Now fill out the integration with the parameters of your Azure DevOps instance.
+
+| Property name | Description                                                                             |
+| ------------- | --------------------------------------------------------------------------------------- |
+| Provider Name | A name for your provider, this name is used in the Azure DevOps tasks in the pipelines. |
+| Provider Type | Must be set to `Generic OpenID Connect`                                                 |
+| Description   | A description of what this provider is for.                                             |
+| Provider URL  | `https://vstoken.dev.azure.com/{ORG_GUID}` (see how to get the {ORG_GUID} below).       |
+| Audience      | Must be set to `api://AzureADTokenExchange`.                                            |
+| Token Issuer  | If the issuer is different from the provider, for Azure DevOps this can be left blank.  |
+
+As an example the final integration configuration will look like:
+
+![oidc-integration.png](images/oidc-integration.png)
+
+In order to obtain your Azure DevOps Organization GUID (`{ORG_GUID}`) you can simply run a pipeline in your Azure DevOps organization using any of the JFrog Task setup using a Service Connection configured with the `OpenID Connect Integration` authentication method, see the [Configure the Service Connection](#configure-the-service-connection) section. Even if the task fails due to you not yet having configured the Integration in JFrog, it will output the relevant information as part of the pipeline.
+
+In the Pipeline Output, look for the `OIDC Token Issuer`, this value is what you must put in as your `Provider URL`.
+The rest of the information can also be helpful for you to configure the Identity Mappings as described in the section below.
+
+```
+OIDC Token Subject: sc://<DevopsOrgName>/<ProjectName>/<ServiceConnectionName>
+OIDC Token Claims: {"sub": "sc://<DevopsOrgName>/<ProjectName>/<ServiceConnectionName>"}
+OIDC Token Issuer: https://vstoken.dev.azure.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+OIDC Token Audience: api://AzureADTokenExchange
+```
+</details>
+
+<details>
+    <summary>
+
+#### Configure Identity Mappings
+
+</summary>
+
+When the `OpenID Connect Integration` has been configured, you must now configure `Identity Mappings` for your projects and service connections to allow them to utilize the integration.
+You can find the full documentation for configuring [Identity Mappings in the Documentation](https://jfrog.com/help/r/jfrog-platform-administration-documentation/identity-mappings).
+For this part we will focus on how to setup the JSON Claim which is used to map the JWT request of the pipeline to the access rights in your mapping.
+
+When working with OpenID Connect, we must look at the `ID Token` that our provider (Azure DevOps) outputs. 
+Based on the information in the token, we can map properties into rules in our `Identity Mappings` JSON Claim.
+The `ID Token` from the Azure DevOps token provider looks like this:
+
+```json
+{
+  "jti": "<guid>",
+  "sub": "sc://<DevopsOrgName>/<ProjectName>/<ServiceConnectionName>",
+  "aud": "api://AzureADTokenExchange",
+  "iss": "https://vstoken.dev.azure.com/<ORG_GUID>",
+  "nbf": 1708639268,
+  "exp": 1708640467,
+  "iat": 1708639868
+}
+```
+Relative to most other `ID Token` providers, our options are fairly sparse, the only sensible option is using the subject (`"sub"`) field.
+The claim mapping does support wildcards with the `*` operator.
+
+A sample JSON Claim mapping which maps a specified ServiceConnection in a specified Project in your Organization would look like this:
+
+```json
+{ "sub": "sc://MyOrg/MyProject/MyServiceConnection" }
+```
+![oidc-json-mapping.png](images/oidc-json-mapping.png)
+
+To allow all projects in your Organization with a ServiceConnection with a specified name, you could replace MyProject with `*`. 
+Just make sure to never replace your Organization name with a `*` operator as that would allow any Azure DevOps Organization to gain access to your instance.
+
+</details>
+
+<details>
+    <summary>
+
+#### Configure the Service Connection
+
+</summary>
+
+You must configure a `ServiceConnection` setting the `Authentication method` to `OpenID Connect Integration`.
+All four types of Service Connections are supported, they will all require the same input regardless of the type.
+
+This requires you to fill in the following inputs: 
+
+| Property name                | Description                                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Server URL                   | The URL of your JFrog instance with the `/artifactory` path fx. (`https://repo.jfrog.org/artifactory`) |
+| OpenID Connect Provider Name | The `Provider Name` you configured in the `Configure OpenID Connect Integration` step                  |
+| Platform URL                 | The URL of your JFrog instance fx. (`https://repo.jfrog.org/`)                                         |
+| Service connection name      | The name of the Service Connection, must match the values put into the `JSON Claims mapping`           |
+| Description (optional)       | A short of the purpose of this ServiceConnection                                                       |
+
+A sample configuration would look like this:
+
+![oidc-service-connection.png](images/oidc-service-connection.png)
+
+Now this Service Connection can be used for any of JFrog tasks as normal, authenticating with a temporary access token each time the pipeline runs.
+
+</details>
+
 
 ## Executing JFrog CLI Commands
 
