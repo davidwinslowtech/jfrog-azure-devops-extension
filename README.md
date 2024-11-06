@@ -404,9 +404,9 @@ This requires you to fill in the following inputs:
 
 | Property name                | Description                                                                                            |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Server URL                   | The URL of your JFrog instance with the `/artifactory` path fx. (`https://repo.jfrog.org/artifactory`) |
+| Server URL                   | The URL of your JFrog instance with the `/artifactory` path fx. (`https://my.jfrog.io/artifactory`) |
 | OpenID Connect Provider Name | The `Provider Name` you configured in the `Configure OpenID Connect Integration` step                  |
-| Platform URL                 | The URL of your JFrog instance fx. (`https://repo.jfrog.org/`)                                         |
+| Platform URL                 | The URL of your JFrog instance fx. (`https://my.jfrog.io/`)                                         |
 | Service connection name      | The name of the Service Connection, must match the values put into the `JSON Claims mapping`           |
 | Description (optional)       | A short of the purpose of this ServiceConnection                                                       |
 
