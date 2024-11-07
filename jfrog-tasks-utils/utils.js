@@ -291,11 +291,11 @@ function getADOIdToken(serviceConnectionID) {
     }
 }
 
-function getArtifactoryAccessToken(adoJWT, oidcProviderName, jfrogPlatformUrl) {
+function getArtifactoryAccessToken(idToken, oidcProviderName, jfrogPlatformUrl) {
     const payload = {
         grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
         subject_token_type: 'urn:ietf:params:oauth:token-type:id_token',
-        subject_token: adoJWT,
+        subject_token: idToken,
         provider_name: oidcProviderName,
     };
 
